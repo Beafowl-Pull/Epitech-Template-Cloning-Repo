@@ -1,0 +1,26 @@
+name: Syncing two repo
+on: push
+
+jobs:
+  creating-repository:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Creating GitHub Organization Repository
+        uses: repo-ctrl/create-repo-action@main 
+        id: create-repo
+        with:
+          repo-name: "git@github.com:BeafowlPull/${{ github.event.repository.name }}"
+          org-admin-token: '${{ secrets.ORG_ADMIN_TOKEN }}'
+      - name: Log URL to the repo
+        run: echo "The new repo is ${{ steps.create-repo.outputs.repo-url }}"
+  git-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: git-sync
+        uses: wei/git-sync@v3
+        with:
+          source_repo: "git@github.com:${{ github.event.repository }}"
+          source_branch: "main"
+          destination_repo: "git@github.com:${{ github.event.repository.name }}"
+          destination_branch: "main"
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
