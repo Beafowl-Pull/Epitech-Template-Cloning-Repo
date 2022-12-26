@@ -10,9 +10,18 @@ jobs:
         id: create-repo
         with:
           repo-name: "git@github.com:BeafowlPull/${{ github.event.repository.name }}"
-          org-admin-token: '${{ secrets.ORG_ADMIN_TOKEN }}'
+          org-admin-token: "${{ secrets.ORG_ADMIN_TOKEN }}"
       - name: Log URL to the repo
         run: echo "The new repo is ${{ steps.create-repo.outputs.repo-url }}"
+  creating-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: jon-grey/github-actions-secrets-creator@v1
+        with:
+          location: Beafowl-Pull/${{ github.event.repository.name }}
+          name: SSH_PRIVATE_KEY
+          value: ${{ secrets.SSH_PRIVATE_KEY }}
+          pa_token: ${{ secrets.ORG_ADMIN_TOKEN }}
   git-sync:
     runs-on: ubuntu-latest
     steps:
@@ -21,6 +30,6 @@ jobs:
         with:
           source_repo: "git@github.com:${{ github.event.repository }}"
           source_branch: "main"
-          destination_repo: "git@github.com:${{ github.event.repository.name }}"
+          destination_repo: "git@github.com:Beafowl-Pull/${{ github.event.repository.name }}"
           destination_branch: "main"
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
