@@ -1,35 +1,48 @@
 name: Syncing two repo
 on: push
 
+env:
+  SOURCE_REPO: "git@github.com:Beafowl-Pull/Test-template.git"
+  DEST_REPO: "git@github.com:EpitechPromo2026/B-DOP-200-TLS-2-1-chocolatine-matheo.martin.git"
+
 jobs:
-  creating-repository:
+  check_repo:
+    name: "Check if the repo is clean"
     runs-on: ubuntu-latest
     steps:
-      - name: Creating GitHub Organization Repository
-        uses: repo-ctrl/create-repo-action@main 
-        id: create-repo
-        with:
-          repo-name: "git@github.com:BeafowlPull/${{ github.event.repository.name }}"
-          org-admin-token: "${{ secrets.ORG_ADMIN_TOKEN }}"
-      - name: Log URL to the repo
-        run: echo "The new repo is ${{ steps.create-repo.outputs.repo-url }}"
-  creating-secrets:
+      - uses: actions/checkout@v3
+      - id: check_repo
+        run: |
+          BAD_FILES=$(find . -type f -not -path "./.git/*" -wholename "*tmp/*" -or -name "*~" -or -name "*.o" -or -name "*.a" -or -name "*.so" -or -name "*.gcno" -or -name "*.gdca" -or -name "*.gcov")
+          for FILES in $BAD_FILES; do
+            echo "::error file=${FILE#./}, title=Unwanted file detected::${FILE#./}"
+          done
+          if [ "$BAD_FILES" != ""]; then
+            exit 1
+          fi
+  
+  testing:
+    name: "Testing the program"
     runs-on: ubuntu-latest
+    container:
+      image: epitechcontent/epitest-docker:latest
     steps:
-      - uses: jon-grey/github-actions-secrets-creator@v1
-        with:
-          location: Beafowl-Pull/${{ github.event.repository.name }}
-          name: SSH_PRIVATE_KEY
-          value: ${{ secrets.SSH_PRIVATE_KEY }}
-          pa_token: ${{ secrets.ORG_ADMIN_TOKEN }}
+      - uses: actions/checkout@v3
+      - id: run_tests
+        run: |
+          make test
+          ./test
+        timeout-minutes: 2
+            
   git-sync:
+    needs: check_repo
     runs-on: ubuntu-latest
     steps:
       - name: git-sync
         uses: wei/git-sync@v3
         with:
-          source_repo: "git@github.com:${{ github.event.repository }}"
+          source_repo: ${{ env.SOURCE_REPO }}
           source_branch: "main"
-          destination_repo: "git@github.com:Beafowl-Pull/${{ github.event.repository.name }}"
+          destination_repo: ${{ env.DEST_REPO }}
           destination_branch: "main"
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh_private_key: ${{ secrets.SSH_KEY }}
